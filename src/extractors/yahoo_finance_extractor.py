@@ -1,6 +1,7 @@
 import pandas as pd
 import yfinance as yf
 from src.extractors.extractor_base import ExtractorBase
+from src.utils.data_cleaning import limpiar_dataframe
 
 class ExtractorYahooFinance(ExtractorBase):
     def __init__(self):
@@ -49,7 +50,9 @@ class ExtractorYahooFinance(ExtractorBase):
             dfs.append(df_std)
 
         if dfs:
-            return pd.concat(dfs, ignore_index=True)
+            df_final = pd.concat(dfs, ignore_index=True)
+            # Llamamos a la función de limpieza
+            return limpiar_dataframe(df_final)
         else:
-            # devolvemos siempre las columnas estándar, aunque vacío
+            # Devolvemos siempre las columnas estándar, aunque vacío
             return pd.DataFrame(columns=['date', 'open', 'high', 'low', 'close', 'volume', 'ticker'])
