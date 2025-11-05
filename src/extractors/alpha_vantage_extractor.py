@@ -170,24 +170,61 @@ class ExtractorAlphaVantage(ExtractorBase):
     # ==========================
     # 🔹 Datos macroeconómicos
     # ==========================
-    def obtener_datos_macro(self, indicador: str):
-        print(f"🌍 Descargando indicador macroeconómico {indicador}...")
-        params = {
-            "function": indicador,
-            "apikey": self.api_key,
+    def obtener_datos_macro(self, indicador: str, start_year: int, end_year: int, pais: str = None):
+        """
+        Obtiene datos macroeconómicos (GDP, INFLATION, UNEMPLOYMENT, CPI)
+        desde AlphaVantage.
+
+        Parámetros
+        ----------
+        indicador : str
+            Nombre del indicador macroeconómico.
+        start_year, end_year : int
+            Rango de años a obtener.
+        pais : str, opcional
+            No usado en AlphaVantage, pero incluido por compatibilidad.
+        """
+        import time
+
+        indicadores_av = {
+            "GDP": "REAL_GDP",
+            "INFLATION": "INFLATION",
+            "UNEMPLOYMENT": "UNEMPLOYMENT",
+            "CPI": "CPI"
         }
-        response = requests.get(self.base_url, params=params)
-        data = response.json()
 
-        # Los indicadores suelen venir en "data" o "Data"
-        series = data.get("data") or data.get("Data") or []
+        if indicador not in indicadores_av:
+            raise ValueError(f"Indicador '{indicador}' no soportado por AlphaVantage.")
 
-        if not series:
-            print(f"⚠️ No se encontraron datos para {indicador}")
+        url = f"https://www.alphavantage.co/query?function={indicadores_av[indicador]}&apikey={self.api_key}&datatype=json"
+        print(f"🔗 Consultando AlphaVantage ({indicador})...")
+
+        response = requests.get(url)
+        if response.status_code != 200:
+            print(f"⚠️ Error {response.status_code} al conectar con AlphaVantage")
             return pd.DataFrame()
 
-        df = pd.DataFrame(series)
-        df.rename(columns={"date": "date", "value": "value"}, inplace=True)
-        df["indicador"] = indicador
-        df["date"] = pd.to_datetime(df["date"])
-        return limpiar_dataframe(df)
+        data = response.json()
+        time.sleep(12)  # evita limit rate
+
+        # --- procesamiento general de AlphaVantage macro ---
+        key = next((k for k in data.keys() if "data" in k.lower()), None)
+        if not key:
+            print(f"⚠️ Estructura inesperada en respuesta para {indicador}")
+            return pd.DataFrame()
+
+        df = pd.DataFrame(data[key])
+        df.columns = [c.upper() for c in df.columns]
+
+        # Normalizar campos típicos
+        if "DATE" in df.columns:
+            df["YEAR"] = df["DATE"].str[:4].astype(int)
+        else:
+            df["YEAR"] = pd.to_datetime(df.iloc[:, 0]).dt.year
+
+        df = df[(df["YEAR"] >= start_year) & (df["YEAR"] <= end_year)]
+
+        df["INDICADOR"] = indicador
+        df["FUENTE"] = "AlphaVantage"
+        df.reset_index(drop=True, inplace=True)
+        return df

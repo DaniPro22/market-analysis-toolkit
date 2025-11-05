@@ -19,42 +19,96 @@ class Cartera:
     def agregar_serie(self, serie: SeriePrecios, peso: float = None):
         """Agrega una SeriePrecios a la cartera."""
         self.series.append(serie)
+
+        # Si no se especifica peso, se actualizan automáticamente por volatilidad inversa
         if peso is not None:
             self.pesos[serie.ticker] = peso
         else:
+            self.ajustar_pesos_por_volatilidad()
+
+    def ajustar_pesos_por_volatilidad(self):
+        """Calcula pesos proporcionales a la volatilidad inversa de cada activo."""
+        if not self.series:
+            return
+
+        vols = {}
+        for s in self.series:
+            try:
+                # Calcular la volatilidad de cada activo a partir de su columna 'close'
+                df_rets = s.datos["close"].pct_change().dropna()
+                vols[s.ticker] = df_rets.std() if not df_rets.empty else np.nan
+            except Exception as e:
+                print(f"⚠️ No se pudo calcular la volatilidad de {s.ticker}: {e}")
+                vols[s.ticker] = np.nan
+
+        # Si alguna volatilidad es NaN o cero → pesos iguales
+        if any(v is None or np.isnan(v) or v == 0 for v in vols.values()):
             n = len(self.series)
             self.pesos = {s.ticker: 1 / n for s in self.series}
+        else:
+            inv_vols = {t: 1 / v for t, v in vols.items()}
+            total = sum(inv_vols.values())
+            self.pesos = {t: w / total for t, w in inv_vols.items()}
+
 
     # ==========================================================
     # Cálculos de rentabilidad y riesgo
     # ==========================================================
-    def calcular_retornos(self):
-        """Concatena los retornos de todas las series en un único DataFrame."""
+    def calcular_retornos(self, metodo_union: str = "inner") -> pd.DataFrame:
+        """
+        Concatena los retornos de todas las series en un único DataFrame.
+        Alinea temporalmente los datos y evita huecos.
+        """
         if not self.series:
             raise ValueError("No hay series en la cartera.")
-        df_rets = pd.concat(
-            [s.returns.rename(s.ticker) for s in self.series if not s.returns.empty],
-            axis=1
-        ).dropna()
+
+        dfs = []
+        for s in self.series:
+            if not s.returns.empty:
+                dfs.append(s.returns.rename(s.ticker))
+
+        if not dfs:
+            print("⚠️ No hay retornos válidos en las series.")
+            return pd.DataFrame()
+
+        # 🔹 Alineación temporal estricta (solo fechas comunes)
+        df_rets = pd.concat(dfs, axis=1, join=metodo_union).dropna()
+        df_rets = df_rets.sort_index()
+
         return df_rets
 
-    def calcular_metricas_globales(self):
+    def calcular_metricas_globales(self) -> dict:
         """Calcula retorno, volatilidad, Sharpe, VaR y CVaR de la cartera."""
         df_rets = self.calcular_retornos()
+
+        if df_rets.empty:
+            print("⚠️ No hay datos coincidentes entre las series para calcular métricas.")
+            return {
+                "ret_anualizado": np.nan,
+                "vol_anualizada": np.nan,
+                "sharpe": np.nan,
+                "var_95": np.nan,
+                "cvar_95": np.nan,
+                "pesos": {}
+            }
+
         tickers = df_rets.columns
         pesos = np.array([self.pesos.get(t, 1 / len(tickers)) for t in tickers])
         pesos = pesos / pesos.sum()
 
         mean_returns = df_rets.mean().values
         cov_matrix = df_rets.cov().values
-
-        # Retorno y volatilidad anualizados
+        
         ret_anual = np.dot(pesos, mean_returns) * 252
         vol_anual = np.sqrt(np.dot(pesos.T, np.dot(cov_matrix * 252, pesos)))
 
         sharpe = (ret_anual - self.risk_free_rate) / vol_anual if vol_anual > 0 else np.nan
-        var_95 = self.calcular_var(df_rets, pesos, alpha=0.05)
-        cvar_95 = self.calcular_cvar(df_rets, pesos, alpha=0.05)
+
+        try:
+            var_95 = self.calcular_var(df_rets, pesos, alpha=0.05)
+            cvar_95 = self.calcular_cvar(df_rets, pesos, alpha=0.05)
+        except Exception:
+            var_95, cvar_95 = np.nan, np.nan
 
         return {
             "ret_anualizado": ret_anual,
@@ -77,26 +131,43 @@ class Cartera:
         cvar = port_rets[port_rets <= var].mean() * 100
         return cvar
 
+    # ==========================================================
+    # Diversificación y correlaciones
+    # ==========================================================
     def calcular_diversificacion(self):
         """Evalúa el grado de diversificación mediante correlación media."""
         df_rets = self.calcular_retornos()
+        if df_rets.empty or len(df_rets.columns) < 2:
+            return np.nan
+
         corr = df_rets.corr()
+        # Excluye la diagonal para evitar autocorrelaciones
         corr_mean = corr.where(~np.eye(corr.shape[0], dtype=bool)).mean().mean()
         return corr_mean
 
     def calcular_correlaciones(self):
         """Devuelve la matriz de correlación entre activos."""
-        return self.calcular_retornos().corr()
+        df_rets = self.calcular_retornos()
+        return df_rets.corr()
 
     # ==========================================================
     # Reporte legible y ejecutivo
     # ==========================================================
-    def report(self):
-        """Genera un reporte ejecutivo de la cartera."""
+    def report(self) -> str:
+        """
+        Genera un reporte ejecutivo de la cartera con control de errores.
+        """
         if not self.series:
             return f"⚠️ La cartera '{self.nombre}' no contiene activos.\n"
 
         metrics = self.calcular_metricas_globales()
+
+        if not metrics["pesos"]:
+            return (
+                f"⚠️ No se pudieron calcular métricas para la cartera '{self.nombre}'.\n"
+                f"Revisa los tickers o el rango temporal.\n"
+            )
+
         corr_mean = self.calcular_diversificacion()
 
         lines = [

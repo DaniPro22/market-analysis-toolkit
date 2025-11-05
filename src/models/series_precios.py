@@ -44,9 +44,19 @@ class SeriePrecios:
     # Métodos de cálculo
     # ==========================================================
     def compute_returns(self):
-        """Calcula los retornos logarítmicos diarios."""
-        self.returns = np.log(self.datos['close'] / self.datos['close'].shift(1)).replace([np.inf, -np.inf], np.nan)
-        self.datos['returns'] = self.returns
+        """Calcula los retornos logarítmicos diarios e indexa por fecha."""
+        # Asegurar orden temporal y tipo datetime
+        self.datos["date"] = pd.to_datetime(self.datos["date"])
+        self.datos = self.datos.sort_values("date").reset_index(drop=True)
+
+        # Calcular retornos logarítmicos
+        self.returns = np.log(self.datos["close"] / self.datos["close"].shift(1)).replace([np.inf, -np.inf], np.nan)
+
+        # Asignar la fecha como índice para sincronización en cartera
+        self.returns.index = self.datos["date"]
+
+        # Guardar también en el DataFrame de datos
+        self.datos["returns"] = self.returns
 
     def compute_volatility(self):
         """Calcula la volatilidad anualizada de los retornos."""

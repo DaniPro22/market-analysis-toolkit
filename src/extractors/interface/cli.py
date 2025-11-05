@@ -2,6 +2,7 @@ import pandas as pd
 from src.extractors.yahoo_finance_extractor import ExtractorYahooFinance
 from src.extractors.alpha_vantage_extractor import ExtractorAlphaVantage
 from src.extractors.twelvedata_extractor import ExtractorTwelveData
+from src.extractors.world_bank_extractor import ExtractorWorldBank
 
 from src.models.series_precios import SeriePrecios
 from src.models.cartera import Cartera
@@ -22,6 +23,10 @@ def seleccionar_tipo_datos():
 # 🔹 2. Selección dinámica del extractor según tipo de dato
 # =========================================================
 def seleccionar_extractor(tipo_datos):
+    """
+    Devuelve el extractor adecuado según el tipo de datos elegido.
+    Muestra opciones solo cuando existen varias APIs posibles.
+    """
     if tipo_datos == "1":
         print("\nSeleccione la API para obtener precios:")
         print("1️⃣  Yahoo Finance")
@@ -37,25 +42,29 @@ def seleccionar_extractor(tipo_datos):
             return ExtractorYahooFinance()
 
     elif tipo_datos == "2":
-        print("\nSeleccione la API para obtener datos fundamentales:")
-        print("1️⃣  Yahoo Finance")
-        print("2️⃣  AlphaVantage")
+        # Solo AlphaVantage soporta datos fundamentales
+        print("\nℹ️ Los datos fundamentales solo están disponibles desde AlphaVantage.")
+        print("""
+        📘 **Datos Fundamentales – Fuente: Alpha Vantage**
+        - Solo disponible para empresas cotizadas en EE. UU.
+        - Ejemplos válidos: AAPL, MSFT, TSLA, AMZN, META, JPM
+        - Los ratios financieros (PER, ROE, margen neto, etc.) se calculan
+        a partir de los informes de la SEC (EE. UU.).
+        ⚠️ Empresas fuera de EE. UU. (como AENA, BBVA, etc.) no devolverán resultados.
+        """)
+        return ExtractorAlphaVantage()
+
+    elif tipo_datos == "3":
+        print("\nSeleccione la API para datos macroeconómicos:")
+        print("1️⃣  AlphaVantage")
+        print("2️⃣  World Bank")
         opcion = input("Opción [1-2]: ").strip()
 
         if opcion == "2":
-            return ExtractorAlphaVantage()
+            return ExtractorWorldBank()
         else:
-            return ExtractorYahooFinance()
-
-    elif tipo_datos == "3":
-        print("\n🔸 Los datos macroeconómicos solo están disponibles desde AlphaVantage.")
-        return ExtractorAlphaVantage()
-
-    else:
-        print("⚠️ Opción inválida. Se usará Yahoo Finance por defecto.")
-        return ExtractorYahooFinance()
-
-
+            return ExtractorAlphaVantage()
+        
 # =========================================================
 # 🔹 3. Inputs según tipo de dato
 # =========================================================
@@ -68,18 +77,24 @@ def pedir_tickers_y_fechas():
 
 
 def pedir_indicador_macro():
-    print("\nSeleccione el indicador macroeconómico:")
-    print("1️⃣  GDP (Producto Interior Bruto)")
-    print("2️⃣  INFLATION (Inflación general)")
-    print("3️⃣  UNEMPLOYMENT (Desempleo)")
-    print("4️⃣  CPI (Índice de Precios al Consumidor)")
-    opcion = input("Opción [1-4]: ").strip()
-
-    mapping = {
-        "1": "REAL_GDP",
+    indicadores = {
+        "1": "GDP",
         "2": "INFLATION",
         "3": "UNEMPLOYMENT",
-        "4": "CPI"
+        "4": "CPI",
+        "5": "ALL"
     }
 
-    return mapping.get(opcion, "INFLATION")
+    while True:
+        print("\nSeleccione el indicador macroeconómico:")
+        print("1️⃣  GDP (Producto Interior Bruto)")
+        print("2️⃣  INFLATION (Inflación general)")
+        print("3️⃣  UNEMPLOYMENT (Desempleo)")
+        print("4️⃣  CPI (Índice de Precios al Consumidor)")
+        print("5️⃣  Todas las anteriores")
+        opcion = input("Opción [1-5]: ").strip()
+
+        if opcion in indicadores:
+            return indicadores[opcion]
+        else:
+            print("⚠️ Opción inválida. Intente nuevamente.")

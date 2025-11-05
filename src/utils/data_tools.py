@@ -79,3 +79,50 @@ def validar_df(df: pd.DataFrame, columnas_unicas: list = None, permitir_negativo
                     errores[f'duplicados_en_{col}'] = df[df[col].duplicated(keep=False)]
     
     return errores
+
+
+
+# FUNCION DE LIMPIEZA 5
+
+
+def sincronizar_fechas(df: pd.DataFrame, columna_fecha: str = "date", columna_ticker: str = "ticker") -> pd.DataFrame:
+    """
+    Sincroniza el rango temporal entre todos los activos (tickers) de un DataFrame.
+    Mantiene solo las fechas comunes a todos los tickers.
+
+    Parámetros:
+        df: DataFrame con columnas 'ticker' y 'date'
+        columna_fecha: nombre de la columna de fechas
+        columna_ticker: nombre de la columna de tickers
+
+    Retorna:
+        DataFrame filtrado con el rango temporal común.
+    """
+    if df.empty:
+        print("⚠️ DataFrame vacío, no se puede sincronizar.")
+        return df
+
+    try:
+        print("📅 Sincronizando fechas entre los activos...")
+
+        fechas_por_ticker = df.groupby(columna_ticker)[columna_fecha].agg(["min", "max"])
+        fecha_inicio_comun = fechas_por_ticker["min"].max()
+        fecha_fin_comun = fechas_por_ticker["max"].min()
+
+        # Filtrar solo el rango común
+        df_filtrado = df[
+            (df[columna_fecha] >= fecha_inicio_comun) &
+            (df[columna_fecha] <= fecha_fin_comun)
+        ].copy()
+
+        n_descartadas = len(df) - len(df_filtrado)
+        if n_descartadas > 0:
+            print(f"⚠️ Se eliminaron {n_descartadas} registros fuera del rango común "
+                  f"({fecha_inicio_comun.date()}–{fecha_fin_comun.date()}).")
+
+        print("✅ Fechas sincronizadas correctamente.\n")
+        return df_filtrado.reset_index(drop=True)
+
+    except Exception as e:
+        print(f"⚠️ Error al sincronizar fechas: {e}")
+        return df

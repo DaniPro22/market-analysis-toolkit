@@ -51,7 +51,7 @@ class ExtractorTwelveData(ExtractorBase):
             return pd.DataFrame()
 
     # ==========================
-    # 🔸 No soporta fundamentales ni macro
+    # 🔸 No soporta fundamentales ni macro, se crean los métodos por conveniencia entre clases o de cara a un futuro
     # ==========================
     def obtener_datos_fundamentales(self, ticker: str) -> pd.DataFrame:
         print(f"⚠️ TwelveData no soporta métricas fundamentales para {ticker}")
