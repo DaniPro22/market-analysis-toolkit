@@ -56,7 +56,18 @@ def seleccionar_extractor(tipo_datos):
 
     elif tipo_datos == "3":
         print("\nSeleccione la API para datos macroeconómicos:")
-        print("1️⃣  AlphaVantage")
+        print("""
+        🌍 **Datos Macroeconómicos**
+        - Fuentes disponibles:
+        1️⃣ Alpha Vantage → indicadores globales (GDP, inflación, desempleo, CPI)
+            * Países: principales economías (EE. UU., ESP, FRA, DEU, etc.)
+        2️⃣ World Bank → base de datos mundial, cobertura más amplia
+            * Países disponibles: casi todos los códigos ISO (ESP, USA, MEX, BRA, etc.)
+        - Rango temporal: normalmente 2000–actualidad.
+        ⚠️ Si un país o indicador no aparece, puede ser por falta de datos oficiales.
+        """)
+
+        print("\n1️⃣  AlphaVantage")
         print("2️⃣  World Bank")
         opcion = input("Opción [1-2]: ").strip()
 

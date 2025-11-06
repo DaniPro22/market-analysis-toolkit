@@ -3,6 +3,9 @@
 import os
 import pandas as pd
 import numpy as np
+import warnings
+warnings.filterwarnings("ignore", category=SyntaxWarning)
+
 from src.extractors.interface.cli import (
     seleccionar_tipo_datos,
     seleccionar_extractor,
@@ -115,16 +118,7 @@ def main():
     # TIPO 3 - DATOS MACROECONÓMICOS
     # ====================================================
     elif tipo_datos == "3":
-        print("""
-        🌍 **Datos Macroeconómicos**
-        - Fuentes disponibles:
-        1️⃣ Alpha Vantage → indicadores globales (GDP, inflación, desempleo, CPI)
-            * Países: principales economías (EE. UU., ESP, FRA, DEU, etc.)
-        2️⃣ World Bank → base de datos mundial, cobertura más amplia
-            * Países disponibles: casi todos los códigos ISO (ESP, USA, MEX, BRA, etc.)
-        - Rango temporal: normalmente 2000–actualidad.
-        ⚠️ Si un país o indicador no aparece, puede ser por falta de datos oficiales.
-        """)
+        
 
         print("\n🌍 Análisis de datos macroeconómicos")
 
