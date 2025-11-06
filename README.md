@@ -1,30 +1,59 @@
-📈 MIAX Market Data Toolkit
+# 📈 MIAX Market Data Toolkit
 
-Análisis Bursátil – Proyecto final (IA y Computación Cuántica BME)
-Desarrollado por Daniel Gallego Sánchez
+**Análisis Bursátil – Proyecto final (IA y Computación Cuántica BME)**
+Desarrollado por [Tu Nombre]
 
-====================================================
-🎯 Objetivo
+---
 
-Crear un conjunto de herramientas modulares para la obtención y análisis de información bursátil, capaz de conectarse a múltiples APIs, estandarizar los datos y ofrecer simulaciones financieras como Monte Carlo, reportes automáticos y limpieza avanzada de datos.
+## 🎯 Objetivo
 
-🧩 Estructura general
+Crear un conjunto de herramientas modulares para **la obtención y análisis de información bursátil**, capaz de conectarse a múltiples APIs, estandarizar los datos y ofrecer simulaciones financieras como Monte Carlo, reportes automáticos y limpieza avanzada de datos.
+
+---
+
+## 🧩 Estructura general
+
+```          
 src/
-├── extractors/     → conexión con APIs (Yahoo, Alpha Vantage, Twelve Data, World Bank)
-├── models/         → DataClasses: SeriePrecios y Cartera
-├── simulations/    → módulo de simulaciones Monte Carlo
-├── utils/          → limpieza, validación y exportación de datos
-main.py             → programa principal (CLI interactivo)
+ ├── extractors/ → conexión con APIs (Yahoo, Alpha Vantage, Twelve Data, World Bank)
+ │   ├── extractor_base.py
+ │   ├── yahoo_finance_extractor.py
+ │   ├── alpha_vantage_extractor.py
+ │   └── twelve_data_extractor.py
+ │
+ ├── models/ → DataClasses: SeriePrecios y Cartera
+ │   ├── series_precios.py
+ │   └── cartera.py
+ │
+ ├── simulations/ → módulo de simulaciones Monte Carlo
+ │   └── montecarlo.py
+ │
+ ├── utils/ → limpieza, validación y exportación de datos
+ │   ├── data_cleaning.py
+ │   ├── export_tools.py
+ │   └── file_utils.py
+ │
+ └── main.py → programa principal (CLI interactivo)
 
-====================================================
-⚙️ Instalación
+```
+
+---
+
+## ⚙️ Instalación
+
+```bash
 git clone https://github.com/tuusuario/MIAX-Market-Toolkit.git
 cd MIAX-Market-Toolkit
 pip install -r requirements.txt
-====================================================
+```
 
-🚀 Ejecución
+---
+
+## 🚀 Ejecución
+
+```bash
 python main.py
+```
 
 El programa abrirá un menú interactivo donde podrás elegir:
 
@@ -33,91 +62,82 @@ El programa abrirá un menú interactivo donde podrás elegir:
 3️⃣ Extraer indicadores macroeconómicos
 4️⃣ Analizar carteras y simulaciones
 
-====================================================
+---
 
-🧠 Estandarización de datos
+## 🧠 Estandarización de datos
 
 Independientemente de la API utilizada, el formato de salida sigue siempre la misma estructura:
 
-date	open	high	low	close	volume	ticker
+| date | open | high | low | close | volume | ticker |
+| ---- | ---- | ---- | --- | ----- | ------ | ------ |
 
 Esto permite reutilizar el mismo análisis y visualización sin cambios de código.
-====================================================
 
-🧮 Principales clases
+---
 
-SeriePrecios
+## 🧮 Principales clases
+
+### `SeriePrecios`
 
 Representa una serie temporal de precios.
 
-Calcula automáticamente: media, desviación, retornos, volatilidad y Sharpe Ratio.
+* Calcula automáticamente: media, desviación, retornos, volatilidad y Sharpe Ratio.
+* Métodos:
 
-Métodos:
+  * `.simulate_montecarlo()`
+  * `.plot_last_simulation()`
+  * `.report()`
 
-.simulate_montecarlo()
+### `Cartera`
 
-.plot_last_simulation()
+Agrupa múltiples `SeriePrecios` y calcula métricas globales:
 
-.report()
+* Retorno y volatilidad anualizados
+* Sharpe Ratio
+* VaR / CVaR
+* Correlación media entre activos
+* `.simulate_montecarlo()` y `.plot_last_portfolio_simulation()`
 
-Cartera
+---
 
-Agrupa múltiples SeriePrecios y calcula métricas globales:
+## 🎲 Simulación Monte Carlo
 
-Retorno y volatilidad anualizados
-
-Sharpe Ratio
-
-VaR / CVaR
-
-Correlación media entre activos
-
-.simulate_montecarlo() y .plot_last_portfolio_simulation()
-
-🎲 Simulación Monte Carlo
-
-Implementación basada en el Geometric Brownian Motion (GBM)
+Implementación basada en el **Geometric Brownian Motion (GBM)**
 
 Permite ajustar:
 
-Días simulados (num_days)
-
-Número de trayectorias (num_simulations)
-
-Semilla aleatoria (random_seed)
+* Días simulados (`num_days`)
+* Número de trayectorias (`num_simulations`)
+* Semilla aleatoria (`random_seed`)
 
 Resultados:
 
-Gráficos individuales y de cartera
+* Gráficos individuales y de cartera
+* Exportación automática a Excel con imágenes embebidas
 
-Exportación automática a Excel con imágenes embebidas
+---
 
-====================================================
+## 🧹 Limpieza y preprocesado
 
-🧹 Limpieza y preprocesado
+Incluye funciones en `utils/data_tools.py`:
 
-Incluye funciones en utils/data_tools.py:
+* `quitar_outliers()` (Z-score o percentil)
+* `rellenar_na()` (media, mediana o constante)
+* `validar_df()` (duplicados y negativos)
+* `homogeneizar_fechas()`
 
-quitar_outliers() (Z-score o percentil)
+---
 
-rellenar_na() (media, mediana o constante)
-
-validar_df() (duplicados y negativos)
-
-homogeneizar_fechas()
-
-====================================================
-
-📑 Reportes y exportación
+## 📑 Reportes y exportación
 
 El programa genera:
 
-Reportes .md automáticos (serie y cartera)
+* Reportes `.md` automáticos (serie y cartera)
+* Archivos `.xlsx` con múltiples hojas y gráficos integrados
+* Carpeta `/reports` y `/outputs` organizadas automáticamente
 
-Archivos .xlsx con múltiples hojas y gráficos integrados
+---
 
-Carpeta /reports y /outputs organizadas automáticamente
+## 🧭 Diagrama de dependencias
 
-====================================================
-
-
+![Diagrama de dependencias](https://github.com/user-attachments/assets/4e06ec33-59e4-4b70-87b1-375bc4bc093b)
